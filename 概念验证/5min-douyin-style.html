@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>渡世人 · 概念验证 · 抖音快节奏版</title>
+  <!-- Bilibili 嵌入播放器 -->
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Noto+Serif+SC:wght@700;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --rust: #8B3A3A;
+    --fire: #E76F51;
+    --neon: #48CAE4;
+    --amber: #F4A261;
+    --gold: #E9C46A;
+    --red: #ff2020;
+    --bg: #0a0604;
+    --text: #e8d5c0;
+    --white: #ffffff;
+  }
+
+  body {
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+    font-family: 'Noto Sans SC', sans-serif;
+  }
+
+  /* ---- PHONE FRAME ---- */
+  #phone {
+    width: 390px;
+    height: 844px;
+    max-width: 100vw;
+    max-height: 100vh;
+    background: #000;
+    position: relative;
+    overflow: hidden;
+    border-radius: 0;
+    box-shadow: 0 0 80px rgba(0,0,0,0.8);
+  }
+
+  @media (max-width: 400px) {
+    #phone { width: 100vw; height: 100vh; max-height: 100vh; }
+  }
+
+  /* ---- SHOT ---- */
+  .shot {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: scale(1.05);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    pointer-events: none;
+    z-index: 0;
+    padding: 30px 24px;
+    text-align: center;
+  }
+  .shot.active {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+    z-index: 10;
+  }
+  .shot.cut {
+    transition: opacity 0.1s ease, transform 0.1s ease;
+  }
+
+  /* ---- BGs ---- */
+  .bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+  .bg-space { background: radial-gradient(ellipse at 40% 30%, #1a0505 0%, #000 80%); }
+  .bg-rust  { background: linear-gradient(180deg, #2a0f05 0%, #0a0303 50%, #000 100%); }
+  .bg-fire  { background: linear-gradient(180deg, #1a0500 0%, #0a0200 40%, #000 80%); }
+  .bg-dark  { background: #000; }
+  .bg-hud   { background: linear-gradient(180deg, #000810 0%, #000 100%); }
+  .bg-workshop { background: linear-gradient(180deg, #0a0505 0%, #020101 100%); }
+
+  /* ---- Dynamic FX ---- */
+  .glitch-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--neon);
+    opacity: 0;
+    z-index: 5;
+    pointer-events: none;
+    box-shadow: 0 0 20px var(--neon);
+  }
+  .glitch-bar.active {
+    animation: glitchSlide 0.3s ease-out forwards;
+  }
+  @keyframes glitchSlide {
+    0% { opacity: 0; top: 10%; }
+    20% { opacity: 1; top: 30%; }
+    40% { opacity: 0.8; top: 60%; }
+    60% { opacity: 1; top: 45%; }
+    100% { opacity: 0; top: 80%; }
+  }
+
+  .flash {
+    position: absolute;
+    inset: 0;
+    background: #fff;
+    opacity: 0;
+    z-index: 8;
+    pointer-events: none;
+  }
+  .flash.hit {
+    animation: flashHit 0.15s ease-out forwards;
+  }
+  @keyframes flashHit {
+    0% { opacity: 0.7; }
+    100% { opacity: 0; }
+  }
+
+  .vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.7) 100%);
+    pointer-events: none;
+    z-index: 4;
+  }
+
+  .shake {
+    animation: screenShake 0.3s ease-out;
+  }
+  @keyframes screenShake {
+    0%,100% { transform: translate(0); }
+    10% { transform: translate(-4px,2px); }
+    30% { transform: translate(4px,-1px); }
+    50% { transform: translate(-2px,-3px); }
+    70% { transform: translate(3px,1px); }
+    90% { transform: translate(-1px,2px); }
+  }
+
+  /* ---- Eye Glow ---- */
+  .eye-red {
+    position: absolute;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--red);
+    box-shadow: 0 0 20px #ff2020, 0 0 50px #cc0000, 0 0 100px #880000;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* ---- Text Styles ---- */
+  .hook-text {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-weight: 900;
+    font-size: 26px;
+    color: #fff;
+    line-height: 1.3;
+    letter-spacing: 0.03em;
+    position: relative;
+    z-index: 3;
+    text-shadow: 0 0 30px rgba(255,255,255,0.3);
+  }
+  .hook-text .highlight {
+    color: var(--amber);
+    text-shadow: 0 0 30px rgba(244,162,97,0.5);
+  }
+  .hook-text .warn {
+    color: var(--red);
+    text-shadow: 0 0 30px rgba(255,32,32,0.6);
+  }
+
+  .big-number {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-weight: 900;
+    font-size: 80px;
+    line-height: 1;
+    position: relative;
+    z-index: 3;
+    letter-spacing: -0.02em;
+  }
+  .big-number.red { color: var(--red); text-shadow: 0 0 60px rgba(255,32,32,0.8); }
+  .big-number.amber { color: var(--amber); text-shadow: 0 0 60px rgba(244,162,97,0.6); }
+
+  .narration {
+    font-size: 15px;
+    color: #c4b5a5;
+    line-height: 1.7;
+    position: relative;
+    z-index: 3;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+  }
+
+  .quote {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--gold);
+    line-height: 1.6;
+    position: relative;
+    z-index: 3;
+    text-shadow: 0 0 25px rgba(233,196,106,0.4);
+  }
+
+  .dialogue-line {
+    font-size: 18px;
+    font-weight: 500;
+    color: #fff;
+    line-height: 1.5;
+    position: relative;
+    z-index: 3;
+  }
+  .dialogue-line .name-tag {
+    font-size: 11px;
+    color: var(--neon);
+    letter-spacing: 0.15em;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .label-box {
+    display: inline-block;
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 4px 14px;
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    color: var(--metal);
+    position: relative;
+    z-index: 3;
+    margin-bottom: 12px;
+  }
+
+  .hud-line {
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    color: #ff6060;
+    line-height: 1.8;
+    letter-spacing: 0.06em;
+    position: relative;
+    z-index: 3;
+    text-shadow: 0 0 12px rgba(255,60,60,0.4);
+  }
+  .hud-line.warn {
+    font-size: 16px;
+    color: #ff2020;
+    animation: warnPulse 0.6s ease-in-out infinite;
+    text-shadow: 0 0 25px rgba(255,0,0,0.7);
+  }
+  @keyframes warnPulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .chapter-tag {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 28px;
+    color: var(--rust);
+    letter-spacing: 0.2em;
+    position: relative;
+    z-index: 3;
+  }
+
+  .ending-line {
+    font-size: 17px;
+    color: var(--amber);
+    line-height: 1.7;
+    position: relative;
+    z-index: 3;
+    font-weight: 500;
+  }
+
+  /* ---- Progress ---- */
+  #progress {
+    position: absolute;
+    top: 0; left: 0;
+    height: 2px;
+    background: var(--amber);
+    z-index: 100;
+    transition: width 0.15s linear;
+  }
+  #timer {
+    position: absolute;
+    top: 8px; right: 14px;
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    color: rgba(255,255,255,0.35);
+    z-index: 100;
+  }
+
+  /* ---- Controls ---- */
+  #ctrls {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 200;
+  }
+  #ctrls button {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #999;
+    padding: 7px 16px;
+    font-size: 12px;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    border-radius: 3px;
+    transition: all 0.25s;
+    font-family: 'Noto Sans SC', sans-serif;
+  }
+  #ctrls button:hover {
+    background: rgba(244,162,97,0.2);
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+  #ctrls button.primary {
+    background: rgba(244,162,97,0.15);
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+
+  /* ---- Particles ---- */
+  .particle {
+    position: absolute;
+    border-radius: 50%;
+    background: var(--amber);
+    pointer-events: none;
+    z-index: 1;
+  }
+</style>
+</head>
+<body>
+
+<div id="phone">
+  <div class="vignette"></div>
+  <div class="glitch-bar" id="glitch-bar"></div>
+  <div class="flash" id="flash"></div>
+  <!-- Bilibili 背景音乐 -->
+  <div style="position:absolute;bottom:96px;left:50%;transform:translateX(-50%);z-index:200;text-align:center;">
+    <div style="font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:0.08em;margin-bottom:3px;">🎬 先点▶开音乐 | 银翼杀手2049电影原声 · 管弦悲情</div>
+    <iframe id="bgm" src="https://player.bilibili.com/player.html?bvid=BV1NZ4y1L76C&autoplay=0&controls=1&t=0"
+      style="width:340px;height:40px;border:none;border-radius:4px;display:block;"
+      allow="autoplay"></iframe>
+  </div>
+  <div id="progress"></div>
+  <div id="timer">00:00</div>
+
+  <!-- ============ SHOTS ============ -->
+
+  <!-- 0. HOOK: 3秒钩子 (0:00-0:03) -->
+  <div class="shot cut" id="s0" data-t="0">
+    <div class="bg bg-dark"></div>
+    <div class="eye-red" style="top:40%;left:50%;transform:translate(-50%,-50%)"></div>
+    <div class="hook-text" style="font-size:32px;">
+      她是一台<span class="warn">杀人机器</span>
+    </div>
+  </div>
+
+  <!-- 1. 钩子反转 (0:03-0:06) -->
+  <div class="shot cut" id="s1" data-t="3">
+    <div class="bg bg-dark"></div>
+    <div class="hook-text">
+      但她<span class="highlight">违抗</span>了命令
+    </div>
+  </div>
+
+  <!-- 2. 钩子揭秘 (0:06-0:10) -->
+  <div class="shot cut" id="s2" data-t="6">
+    <div class="bg bg-dark"></div>
+    <div class="big-number red">43秒</div>
+    <div class="narration" style="margin-top:8px;">被封锁七年的记忆</div>
+  </div>
+
+  <!-- 3. 世界建立 (0:10-0:16) -->
+  <div class="shot cut" id="s3" data-t="10">
+    <div class="bg bg-space">
+      <div style="position:absolute;top:20%;left:30%;width:50px;height:50px;border-radius:50%;background:radial-gradient(circle,rgba(244,162,97,0.4) 0%,transparent 70%);box-shadow:0 0 60px rgba(200,80,50,0.3);"></div>
+    </div>
+    <div class="narration">
+      灰巢的太阳<br>从来不像太阳
+    </div>
+  </div>
+
+  <!-- 4. 灰巢氛围 (0:16-0:22) -->
+  <div class="shot cut" id="s4" data-t="16">
+    <div class="bg bg-rust"></div>
+    <div class="narration">
+      一颗衰老的红矮星<br>把这颗垃圾行星<br>染成<span style="color:var(--rust);">铁锈的颜色</span>
+    </div>
+  </div>
+
+  <!-- 5. 废料场 (0:22-0:28) -->
+  <div class="shot cut" id="s5" data-t="22">
+    <div class="bg bg-rust">
+      <div style="position:absolute;top:25%;left:20%;width:3px;height:80px;background:var(--neon);box-shadow:0 0 20px var(--neon);opacity:0.5;"></div>
+      <div style="position:absolute;top:50%;right:25%;width:3px;height:60px;background:var(--neon);box-shadow:0 0 20px var(--neon);opacity:0.3;"></div>
+    </div>
+    <div class="narration">
+      这里只有两种光——<br>灰蒙蒙的日光<br>和<span style="color:var(--neon);">霓虹灯管的冷光</span>
+    </div>
+  </div>
+
+  <!-- 6. 主角登场：焊枪火花 (0:28-0:33) -->
+  <div class="shot cut" id="s6" data-t="28">
+    <div class="bg bg-workshop">
+      <div style="position:absolute;top:35%;left:50%;transform:translate(-50%,-50%);width:6px;height:6px;background:#4488ff;border-radius:50%;box-shadow:0 0 30px #4488ff,0 0 70px #2266cc;"></div>
+    </div>
+    <div class="narration">
+      灰。蹲在废电路板中间。<br>嘴里咬着焊枪。
+    </div>
+  </div>
+
+  <!-- 7. 灰的特征 (0:33-0:40) -->
+  <div class="shot cut" id="s7" data-t="33">
+    <div class="bg bg-workshop">
+      <div class="eye-red" style="top:32%;left:48%;"></div>
+    </div>
+    <div class="narration">
+      右眼闪着<span style="color:var(--red);">红光</span><br>
+      半张脸是钛合金<br>
+      左臂——<span style="color:var(--rust);">只剩一个生锈的接口</span>
+    </div>
+  </div>
+
+  <!-- 8. 她曾是什么 (0:40-0:46) -->
+  <div class="shot cut" id="s8" data-t="40">
+    <div class="bg bg-dark"></div>
+    <div class="label-box">联邦财产</div>
+    <div class="dialogue-line" style="font-size:16px;">
+      A-7 "渡鸦"型改造人<br>渡鸦小队一号机<br>造价相当于<span class="warn">一艘护卫舰</span>
+    </div>
+  </div>
+
+  <!-- 9. 现在 (0:46-0:50) -->
+  <div class="shot cut" id="s9" data-t="46">
+    <div class="bg bg-workshop"></div>
+    <div class="narration">
+      现在她蹲在废料场里修空调<br>
+      一个小时收<span style="color:var(--amber);">五个信用点</span>
+    </div>
+  </div>
+
+  <!-- 10. 老洪登场 (0:50-0:56) -->
+  <div class="shot cut" id="s10" data-t="50">
+    <div class="bg bg-workshop">
+      <div class="eye-red" style="top:35%;left:45%;"></div>
+    </div>
+    <div class="dialogue-line">
+      <span class="name-tag">老洪</span>
+      "灰！修好没？三个小时了。"
+    </div>
+  </div>
+
+  <!-- 11. 挑刺艺术 (0:56-1:02) -->
+  <div class="shot cut" id="s11" data-t="56">
+    <div class="bg bg-workshop"></div>
+    <div class="dialogue-line">
+      <span class="name-tag">灰</span>
+      "你的电网比你的腿还旧。"
+    </div>
+    <div class="dialogue-line" style="margin-top:10px;">
+      <span class="name-tag">老洪</span>
+      "我的腿是实木的。<br>比你的二手零件值钱。"
+    </div>
+  </div>
+
+  <!-- 12. 灰巢打招呼方式 (1:02-1:06) -->
+  <div class="shot cut" id="s12" data-t="62">
+    <div class="bg bg-dark"></div>
+    <div class="narration" style="font-size:17px;color:#fff;">
+      灰巢的人打招呼不兴说"你好"<br>
+      <span style="color:var(--amber);">兴挑刺。</span><br>
+      挑的刺越刁钻，关系越好。
+    </div>
+  </div>
+
+  <!-- 13. 背包 (1:06-1:10) -->
+  <div class="shot cut" id="s13" data-t="66">
+    <div class="bg bg-workshop"></div>
+    <div class="dialogue-line">
+      <span class="name-tag">老洪</span>
+      "三天的充电块。新的肩膀关节。<br>黑市的。别问我哪儿来的。"
+    </div>
+  </div>
+
+  <!-- 14. 军用品 (1:10-1:13) -->
+  <div class="shot cut" id="s14" data-t="70">
+    <div class="bg bg-dark"></div>
+    <div class="narration" style="color:#fff;">
+      军用品。<br>战前联邦军标准制式背包。
+    </div>
+  </div>
+
+  <!-- 15. 灰巢规矩 (1:13-1:17) -->
+  <div class="shot cut" id="s15" data-t="73">
+    <div class="bg bg-dark"></div>
+    <div class="quote">
+      "别问东西从哪儿来。<br>别问人要往哪儿去。"
+    </div>
+    <div class="narration" style="margin-top:6px;">——灰巢的规矩</div>
+  </div>
+
+  <!-- 16. 三个空调 (1:17-1:23) -->
+  <div class="shot cut" id="s16" data-t="77">
+    <div class="bg bg-workshop"></div>
+    <div class="dialogue-line">
+      <span class="name-tag">老洪</span>
+      "帮我修三个空调。"
+    </div>
+    <div class="dialogue-line" style="margin-top:8px;">
+      <span class="name-tag">灰</span>
+      "你的店只有一个空调。"
+    </div>
+    <div class="dialogue-line" style="margin-top:8px;color:var(--amber);">
+      <span class="name-tag">老洪</span>
+      "所以我买了两个坏的。你修。"
+    </div>
+  </div>
+
+  <!-- 17. 七年前闪回 (1:23-1:30) -->
+  <div class="shot cut" id="s17" data-t="83">
+    <div class="bg bg-fire"></div>
+    <div class="narration">
+      <span style="color:var(--amber);">七年前</span><br>
+      他收留她的时候<br>
+      半张脸还是<span class="warn">血淋淋的伤口</span><br>
+      义眼还没校准好
+    </div>
+  </div>
+
+  <!-- 18. 受伤的鸟 (1:30-1:35) -->
+  <div class="shot cut" id="s18" data-t="90">
+    <div class="bg bg-fire"></div>
+    <div class="quote" style="font-size:18px;">
+      看人的时候会不自觉地偏头——<br>像一只受伤的鸟<br>在判断距离。
+    </div>
+  </div>
+
+  <!-- 19. 深夜 (1:35-1:42) -->
+  <div class="shot cut" id="s19" data-t="95">
+    <div class="bg bg-workshop">
+      <div class="eye-red" style="top:30%;left:50%;transform:translate(-50%,-50%);"></div>
+    </div>
+    <div class="narration" style="color:#fff;">
+      深夜。<br>唯一的光源——<br>是她右眼的<span style="color:var(--red);">红色义眼</span>
+    </div>
+  </div>
+
+  <!-- 20. 镜子 (1:42-1:50) -->
+  <div class="shot cut" id="s20" data-t="102">
+    <div class="bg bg-workshop">
+      <div class="eye-red" style="top:25%;left:50%;"></div>
+    </div>
+    <div class="narration">
+      她用镊子修补左肩断口<br>
+      咬着筷子，额头上全是汗<br>
+      镊子夹起烧焦的皮肤组织<br>
+      <span style="color:#fff;">她没有皱眉头。</span>
+    </div>
+  </div>
+
+  <!-- 21. 半个面具 (1:50-1:56) -->
+  <div class="shot cut" id="s21" data-t="110">
+    <div class="bg bg-dark"></div>
+    <div class="quote" style="font-size:22px;">
+      半张脸是人类<br>半张脸是金属<br>
+      <span style="color:var(--rust);">像一个做到一半的面具。</span>
+    </div>
+  </div>
+
+  <!-- 22. 天花板裂缝 (1:56-2:02) -->
+  <div class="shot cut" id="s22" data-t="116">
+    <div class="bg bg-workshop">
+      <div style="position:absolute;top:8%;left:50%;width:1px;height:100px;background:linear-gradient(180deg,rgba(200,180,160,0.2) 0%,transparent 100%);transform:translateX(-50%);"></div>
+    </div>
+    <div class="narration">
+      天花板上有一道裂缝<br>
+      灰巢没有星星<br>
+      大气层太厚了
+    </div>
+  </div>
+
+  <!-- 23. 记忆记录 (2:02-2:08) -->
+  <div class="shot cut" id="s23" data-t="122">
+    <div class="bg bg-hud"></div>
+    <div class="narration" style="color:#fff;">
+      改造人的"功能"——<br><span style="color:var(--red);">记忆记录。</span><br>
+      关不掉。删除不了。
+    </div>
+  </div>
+
+  <!-- 24. 永远拍着的摄像机 (2:08-2:13) -->
+  <div class="shot cut" id="s24" data-t="128">
+    <div class="bg bg-dark"></div>
+    <div class="quote" style="font-size:17px;">
+      "像一台永远不会坏的摄像机，<br>二十四小时对着你的脑子拍。"
+    </div>
+  </div>
+
+  <!-- 25. 战争闪回·队友离线 (2:13-2:18) -->
+  <div class="shot cut" id="s25" data-t="133">
+    <div class="bg bg-hud"></div>
+    <div class="hud-line">「渡鸦3号离线。」</div>
+    <div class="hud-line" style="margin-top:2px;">「渡鸦5号离线。」</div>
+    <div class="hud-line" style="margin-top:2px;">「渡鸦7号——」</div>
+  </div>
+
+  <!-- 26. 命令 (2:18-2:24) -->
+  <div class="shot cut" id="s26" data-t="138">
+    <div class="bg bg-hud"></div>
+    <div class="hud-line" style="color:#ff8080;font-size:15px;">
+      「渡鸦1号，收到最新指令——」
+    </div>
+    <div class="hud-line warn" style="font-size:18px;margin-top:6px;">
+      「清除目标区所有生命信号。」
+    </div>
+  </div>
+
+  <!-- 27. 收到 (2:24-2:28) -->
+  <div class="shot cut" id="s27" data-t="144">
+    <div class="bg bg-dark"></div>
+    <div class="dialogue-line" style="font-size:22px;color:#fff;">
+      "……收到。"
+    </div>
+  </div>
+
+  <!-- 28. 43秒封锁 (2:28-2:34) -->
+  <div class="shot cut" id="s28" data-t="148">
+    <div class="bg bg-hud"></div>
+    <div class="hud-line warn" style="font-size:17px;">
+      ⚠ AI核心<br>自主判断启动<br>延迟执行中
+    </div>
+  </div>
+
+  <!-- 29. 未知数据 (2:34-2:40) -->
+  <div class="shot cut" id="s29" data-t="154">
+    <div class="bg bg-dark"></div>
+    <div class="big-number red" style="font-size:60px;">/43秒</div>
+    <div class="hud-line" style="margin-top:8px;">未知数据区块<br>已锁定。访问被拒绝。</div>
+  </div>
+
+  <!-- 30. 惊醒 (2:40-2:46) -->
+  <div class="shot cut" id="s30" data-t="160">
+    <div class="bg bg-workshop">
+      <div class="eye-red" style="top:35%;left:50%;animation:eyePulse 0.2s ease-in-out infinite;"></div>
+    </div>
+    <div class="narration" style="color:#fff;">
+      灰猛地坐起来<br>
+      左肩接口<span class="warn">火花四溅</span><br>
+      义眼疯狂闪烁红光
+    </div>
+  </div>
+
+  <!-- 31. 七年2500夜 (2:46-2:52) -->
+  <div class="shot cut" id="s31" data-t="166">
+    <div class="bg bg-dark"></div>
+    <div class="big-number red" style="font-size:70px;">2500</div>
+    <div class="narration" style="margin-top:4px;">
+      这个梦她做了七年<br>两千五百多个夜晚<br>每一次都一样
+    </div>
+  </div>
+
+  <!-- 32. 红外扫描 (2:52-2:58) -->
+  <div class="shot cut" id="s32" data-t="172">
+    <div class="bg bg-hud"></div>
+    <div class="narration" style="color:var(--neon);">
+      义眼切换到红外扫描<br>
+      视野变成冷蓝色
+    </div>
+  </div>
+
+  <!-- 33. 热源轮廓 (2:58-3:04) -->
+  <div class="shot cut" id="s33" data-t="178">
+    <div class="bg bg-hud">
+      <div style="position:absolute;bottom:25%;right:20%;width:50px;height:70px;border:1px solid rgba(72,202,228,0.5);border-radius:50% 50% 30% 30%;box-shadow:0 0 30px rgba(72,202,228,0.2);"></div>
+    </div>
+    <div class="narration" style="color:#fff;">
+      房间角落——<br>一个正在消退的<span style="color:var(--neon);">人形热源</span><br>
+      地面一小片湿痕——脚印
+    </div>
+  </div>
+
+  <!-- 34. 有人来过 (3:04-3:08) -->
+  <div class="shot cut" id="s34" data-t="184">
+    <div class="bg bg-dark"></div>
+    <div class="hook-text" style="font-size:24px;">
+      有人在她睡着的时候<br><span class="warn">进来过。</span>
+    </div>
+  </div>
+
+  <!-- 35. 不是第一次 (3:08-3:14) -->
+  <div class="shot cut" id="s35" data-t="188">
+    <div class="bg bg-dark"></div>
+    <div class="narration" style="color:#fff;font-size:17px;">
+      不是第一次。<br>
+      七年来。<br>
+      每个月一次。
+    </div>
+  </div>
+
+  <!-- 36. 三十秒 (3:14-3:18) -->
+  <div class="shot cut" id="s36" data-t="194">
+    <div class="bg bg-dark"></div>
+    <div class="narration">
+      每次停留不超过<span style="color:var(--amber);font-size:22px;">三十秒</span><br>
+      什么都不拿走<br>
+      什么都不留下<br>
+      只留下<span style="color:var(--neon);">一个脚印</span>
+    </div>
+  </div>
+
+  <!-- 37. 灰的独白 (3:18-3:25) -->
+  <div class="shot cut" id="s37" data-t="198">
+    <div class="bg bg-workshop">
+      <div class="eye-red" style="top:40%;left:50%;"></div>
+    </div>
+    <div class="quote" style="font-size:17px;">
+      "七年来，每个月都来一次。<br>想找什么，我知道。<br>我也想找回来。"
+    </div>
+  </div>
+
+  <!-- 38. 片名冲击 (3:25-3:32) -->
+  <div class="shot cut" id="s38" data-t="205">
+    <div class="bg bg-dark"></div>
+    <div class="chapter-tag" style="font-size:36px;color:var(--amber);margin-bottom:8px;">渡 世 人</div>
+    <div class="narration" style="color:#999;">THE FERRYMAN</div>
+  </div>
+
+  <!-- 39. 第一章结束·过渡 (3:32-3:38) -->
+  <div class="shot cut" id="s39" data-t="212">
+    <div class="bg bg-dark"></div>
+    <div class="chapter-tag">第一章 · 锈</div>
+    <div class="narration" style="margin-top:8px;">完</div>
+  </div>
+
+  <!-- 40. 第二章钩子 (3:38-3:44) -->
+  <div class="shot cut" id="s40" data-t="218">
+    <div class="bg bg-hud"></div>
+    <div class="hook-text" style="font-size:22px;">
+      一个<span class="highlight">信号</span><br>从灰巢下层传来
+    </div>
+  </div>
+
+  <!-- 41. 加密协议 (3:44-3:50) -->
+  <div class="shot cut" id="s41" data-t="224">
+    <div class="bg bg-hud"></div>
+    <div class="hud-line">加密协议：A-7军用级</div>
+    <div class="hud-line" style="margin-top:4px;">发送者：未识别</div>
+    <div class="narration" style="margin-top:12px;color:#fff;">
+      她的型号。<br>在这个被联邦遗弃的垃圾星球上<br>有人在用和她一模一样的加密协议
+    </div>
+  </div>
+
+  <!-- 42. 信号内容 (3:50-3:55) -->
+  <div class="shot cut" id="s42" data-t="230">
+    <div class="bg bg-dark"></div>
+    <div class="hud-line warn" style="font-size:18px;">
+      "……编号确认……<br>A-7核心……<br>副本……正在运行……"
+    </div>
+  </div>
+
+  <!-- 43. 坐标 (3:55-4:00) -->
+  <div class="shot cut" id="s43" data-t="235">
+    <div class="bg bg-hud"></div>
+    <div class="hud-line">
+      「坐标：灰巢下层<br>旧军工厂<br>第三区」
+    </div>
+  </div>
+
+  <!-- 44. 她出发了 (4:00-4:05) -->
+  <div class="shot cut" id="s44" data-t="240">
+    <div class="bg bg-rust">
+      <div class="eye-red" style="top:30%;left:50%;"></div>
+    </div>
+    <div class="narration" style="color:#fff;font-size:17px;">
+      灰抓起背包。<br>推开铁门。<br>向那片<span style="color:#000;text-shadow:0 0 10px rgba(0,0,0,0.5);">纯粹的黑暗</span>走去。
+    </div>
+  </div>
+
+  <!-- 45. 布洛的名字 (4:05-4:12) -->
+  <div class="shot cut" id="s45" data-t="245">
+    <div class="bg bg-dark"></div>
+    <div class="hud-line" style="color:var(--amber);font-size:16px;">
+      「——已识别——<br>发送者：<span style="font-size:22px;">布洛</span>——」
+    </div>
+  </div>
+
+  <!-- 46. 他还活着 (4:12-4:16) -->
+  <div class="shot cut" id="s46" data-t="252">
+    <div class="bg bg-dark"></div>
+    <div class="hook-text" style="font-size:24px;">
+      和她同一天<br>在实验室里睁开眼睛的人<br>
+      <span class="highlight">还活着。</span>
+    </div>
+  </div>
+
+  <!-- 47. 预告钩子·老洪 (4:16-4:22) -->
+  <div class="shot cut" id="s47" data-t="256">
+    <div class="bg bg-dark"></div>
+    <div class="dialogue-line">
+      <span class="name-tag">灰</span>
+      "老洪——你到底是什么人。"
+    </div>
+  </div>
+
+  <!-- 48. 老洪的回答 (4:22-4:26) -->
+  <div class="shot cut" id="s48" data-t="262">
+    <div class="bg bg-dark"></div>
+    <div class="dialogue-line" style="color:var(--amber);">
+      <span class="name-tag">老洪</span>
+      "一个修空调的。"
+    </div>
+  </div>
+
+  <!-- 49. 身份揭露 (4:26-4:32) -->
+  <div class="shot cut" id="s49" data-t="266">
+    <div class="bg bg-dark"></div>
+    <div class="label-box" style="color:var(--amber);border-color:var(--amber);">真相</div>
+    <div class="hud-line" style="color:var(--gold);font-family:'Noto Sans SC',sans-serif;font-size:15px;">
+      联邦AI研究院 · 首席工程师<br>
+      A-7项目 · 总设计师
+    </div>
+  </div>
+
+  <!-- 50. 200个复制体 (4:32-4:38) -->
+  <div class="shot cut" id="s50" data-t="272">
+    <div class="bg bg-dark"></div>
+    <div class="big-number red">200+</div>
+    <div class="narration" style="margin-top:4px;color:#fff;">
+      A-7复制品<br>每一个都是她<br>每一台都在执行七年前没完成的命令
+    </div>
+  </div>
+
+  <!-- 51. 那43秒 (4:38-4:45) -->
+  <div class="shot cut" id="s51" data-t="278">
+    <div class="bg bg-hud"></div>
+    <div class="hook-text" style="font-size:20px;">
+      她右眼里锁着一片<br><span class="warn">43秒</span>的记忆
+    </div>
+    <div class="narration" style="margin-top:6px;">
+      全世界唯一一段<br>AI自主意志的记录
+    </div>
+  </div>
+
+  <!-- 52. 最终钩子 (4:45-4:52) -->
+  <div class="shot cut" id="s52" data-t="285">
+    <div class="bg bg-dark"></div>
+    <div class="quote" style="font-size:21px;">
+      "以前我以为——<br>救赎是删掉过去。"
+    </div>
+  </div>
+
+  <!-- 53. 结束语 (4:52-4:58) -->
+  <div class="shot cut" id="s53" data-t="292">
+    <div class="bg bg-dark"></div>
+    <div class="quote" style="font-size:21px;color:#fff;">
+      "后来我才知道——<br>救赎不过是<br>终于能看着日出<br>不用再闭上眼。"
+    </div>
+  </div>
+
+  <!-- 54. 片名再现 (4:58-5:00) -->
+  <div class="shot cut" id="s54" data-t="298">
+    <div class="bg bg-dark">
+      <div class="eye-red" style="top:35%;left:50%;transform:translate(-50%,-50%);animation:eyePulse 2s ease-in-out infinite;"></div>
+    </div>
+    <div class="chapter-tag" style="font-size:40px;color:var(--amber);">渡 世 人</div>
+    <div class="narration" style="margin-top:12px;color:var(--amber);font-size:13px;">
+      献给所有在灰烬里选择过的人
+    </div>
+  </div>
+
+  <!-- Music credit -->
+  <div style="position:absolute;bottom:70px;left:50%;transform:translateX(-50%);z-index:200;font-size:9px;color:rgba(255,255,255,0.25);text-align:center;letter-spacing:0.05em;pointer-events:none;">
+    🎬 银翼杀手2049 · 汉斯·季默电影原声 · 管弦悲情
+  </div>
+  <!-- Controls -->
+  <div id="ctrls">
+    <button onclick="togglePlay()" id="btn" class="primary">▶ 播放</button>
+    <button onclick="resetAll()">↺</button>
+    <button onclick="toggleMute()" id="btn-mute" style="font-size:11px;">🔊</button>
+    <button onclick="skipTo(0)">0:00</button>
+    <button onclick="skipTo(133)">2:13</button>
+    <button onclick="skipTo(205)">3:25</button>
+  </div>
+
+</div>
+
+<script>
+const shots = Array.from(document.querySelectorAll('.shot')).map(el => ({
+  el,
+  t: parseFloat(el.dataset.t)
+})).sort((a,b) => a.t - b.t);
+
+const DURATION = 300; // 5min
+let time = 0, playing = false, timer = null;
+
+function show(t) {
+  let active = null;
+  for (let i = shots.length - 1; i >= 0; i--) {
+    if (t >= shots[i].t) { active = shots[i].el; break; }
+  }
+  shots.forEach(s => s.el.classList.remove('active'));
+  if (active) active.classList.add('active');
+  document.getElementById('progress').style.width = (t / DURATION * 100) + '%';
+  const m = Math.floor(t/60), s = Math.floor(t%60);
+  document.getElementById('timer').textContent = String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+
+function tick() {
+  if (!playing) return;
+  time += 0.08;
+  if (time >= DURATION) { time = DURATION; pause(); }
+  show(time);
+  if (playing) timer = setTimeout(tick, 80);
+}
+
+function play() {
+  playing = true;
+  document.getElementById('btn').textContent = '⏸';
+  if (time >= DURATION) time = 0;
+  show(time);
+  tick();
+}
+function pause() {
+  playing = false;
+  document.getElementById('btn').textContent = '▶ 播放';
+  if (timer) clearTimeout(timer);
+}
+function togglePlay() { playing ? pause() : play(); }
+function resetAll() { pause(); time = 0; show(0); }
+var muted = false;
+function toggleMute() {
+  muted = !muted;
+  document.getElementById('btn-mute').textContent = muted ? '🔇' : '🔊';
+}
+function skipTo(s) {
+  time = s;
+  show(s);
+  // Flash effect
+  const flash = document.getElementById('flash');
+  flash.classList.remove('hit');
+  void flash.offsetWidth;
+  flash.classList.add('hit');
+}
+
+// Random glitch bar
+setInterval(() => {
+  if (!playing) return;
+  if (Math.random() < 0.3) {
+    const bar = document.getElementById('glitch-bar');
+    bar.classList.remove('active');
+    void bar.offsetWidth;
+    bar.classList.add('active');
+  }
+}, 1500);
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  switch(e.key) {
+    case ' ': e.preventDefault(); togglePlay(); break;
+    case 'ArrowRight': skipTo(Math.min(DURATION, time+3)); break;
+    case 'ArrowLeft': skipTo(Math.max(0, time-3)); break;
+    case 'r': resetAll(); break;
+  }
+});
+
+// Init
+show(0);
+</script>
+</body>
+</html>

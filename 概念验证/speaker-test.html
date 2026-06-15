@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔊 扬声器诊断</title>
+<style>
+  body { background: #111; color: #eee; font-family: 'Noto Sans SC', sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
+  h2 { color: #F4A261; margin-top: 30px; }
+  button { padding: 12px 24px; margin: 8px; font-size: 16px; cursor: pointer; border: 1px solid #555; background: #222; color: #fff; border-radius: 6px; }
+  button:hover { background: #333; }
+  .pass { color: #4caf50; }
+  .fail { color: #f44336; }
+  .info { color: #888; font-size: 13px; }
+  iframe { border: 1px solid #444; border-radius: 4px; }
+  .result { padding: 10px; margin: 10px 0; border-radius: 4px; background: #1a1a1a; }
+</style>
+</head>
+<body>
+
+<h1>🔊 背景音乐诊断</h1>
+
+<!-- 测试1: 系统音频 -->
+<h2>测试 1️⃣ — 系统音频</h2>
+<button onclick="testTone()">▶ 播放测试音 (440Hz)</button>
+<button onclick="stopTone()">⏹ 停止</button>
+<div class="info">如果能听到"哔——"的声音 → 扬声器正常，是配乐加载的问题<br>如果听不到 → 检查扬声器/音量/静音</div>
+<div class="result" id="r1"></div>
+
+<!-- 测试2: 在线MP3 -->
+<h2>测试 2️⃣ — 在线音频直链</h2>
+<button onclick="testAudio()">▶ 播放在线MP3</button>
+<button onclick="stopAudio()">⏹ 停止</button>
+<div class="info">用 HTML5 &lt;audio&gt; 标签播放一个公开可访问的MP3<br>如果能听到 → 浏览器音频正常</div>
+<div class="result" id="r2"></div>
+
+<!-- 测试3: Bilibili iframe -->
+<h2>测试 3️⃣ — Bilibili 播放器</h2>
+<iframe id="test-bili" src="https://player.bilibili.com/player.html?bvid=BV1gp4y1F77L&autoplay=0&controls=1&t=30"
+  width="100%" height="140" allow="autoplay" style="margin:10px 0;"></iframe>
+<div class="info">👆 直接点上面的 ▶ 播放按钮，能听到吗？<br>如果 Bilibili 播放器能放但 animatic 里听不到 → iframe 嵌入方式的问题<br>如果连这个都放不了 → Bilibili 可能被网络限制</div>
+<div class="result" id="r3"></div>
+
+<!-- 测试4: 修复后的 animatic 配乐 -->
+<h2>测试 4️⃣ — 修复版嵌入</h2>
+<iframe id="test-bgm" src="https://player.bilibili.com/player.html?bvid=BV1gp4y1F77L&autoplay=0&controls=1&t=60"
+  width="100%" height="80" allow="autoplay" style="margin:10px 0;"></iframe>
+<div class="info">和 animatic 里用的是同一个 Bilibili 视频</div>
+
+<script>
+var audioCtx = null;
+var osc = null;
+var audioEl = null;
+
+function testTone() {
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    osc = audioCtx.createOscillator();
+    var gain = audioCtx.createGain();
+    gain.gain.value = 0.3;
+    osc.type = 'sine';
+    osc.frequency.value = 440;
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    document.getElementById('r1').innerHTML = '<span class="pass">✅ 正在播放测试音... 听得到吗？</span>';
+  } catch(e) {
+    document.getElementById('r1').innerHTML = '<span class="fail">❌ 播放失败: ' + e.message + '</span>';
+  }
+}
+function stopTone() {
+  if (osc) { osc.stop(); osc = null; }
+  if (audioCtx) { audioCtx.close(); audioCtx = null; }
+  document.getElementById('r1').innerHTML = '<span class="info">已停止</span>';
+}
+
+function testAudio() {
+  if (audioEl) { audioEl.pause(); audioEl.remove(); }
+  // 使用一个极小的公开MP3测试文件
+  audioEl = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
+  audioEl.volume = 0.5;
+  audioEl.play().then(function() {
+    document.getElementById('r2').innerHTML = '<span class="pass">✅ MP3 正在播放！扬声器和浏览器音频都正常</span>';
+  }).catch(function(e) {
+    document.getElementById('r2').innerHTML = '<span class="fail">❌ 播放失败: ' + e.message + ' (可能是浏览器阻止了自动播放，点按钮时应该允许)</span>';
+  });
+}
+function stopAudio() {
+  if (audioEl) { audioEl.pause(); audioEl.remove(); audioEl = null; }
+  document.getElementById('r2').innerHTML = '<span class="info">已停止</span>';
+}
+</script>
+
+</body>
+</html>
