@@ -56,3 +56,4 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 2. **生成任何 AI 图像/视频提示词前，对照 `风格圣经-每镜必查.md`** 检查角色特征是否正确。
 3. **提示词使用英文**（Midjourney/Kling/Runway 等工具对英文响应更好），中文仅用于场景说明。
 4. **素材文件（.mp4, .png, .aiff, .wav）是生成产物**，修改应通过调整提示词或参数重新生成，而非直接编辑二进制文件。
+5. **自动提交与推送（`/88`）前，必须先用 `git diff --cached` 查看改动内容，然后分点简洁概括本次更新内容**（改了什么文件、具体改动是什么），再执行 commit 和 push。
